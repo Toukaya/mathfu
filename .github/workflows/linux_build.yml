@@ -1,0 +1,56 @@
+name: Linux build
+
+on:
+  push:
+    branches: [ "CXX20Upgrade" ]
+  pull_request:
+    branches: [ "CXX20Upgrade" ]
+
+jobs:
+  build:
+
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v3
+    
+    - name: Install dependencies
+      run: sudo apt-get install -y cmake g++
+
+    - name: Create Build Directory
+      run: mkdir build
+
+    - name: Navigate to Build Directory
+      run: cd build
+
+    - name: CMake
+      run: cmake ..
+
+    - name: Make
+      run: make
+
+    - name: Archive production artifacts
+      run: |
+        tar czvf mathfu.tar.gz -C build .
+        
+    - name: Create Release
+      id: create_release
+      uses: actions/create-release@v1
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      with:
+        tag_name: ${{ github.ref }}
+        release_name: Release ${{ github.ref }}
+        draft: false
+        prerelease: false
+
+    - name: Upload Release Asset
+      id: upload-release-asset 
+      uses: actions/upload-release-asset@v1
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      with:
+        upload_url: ${{ steps.create_release.outputs.upload_url }} 
+        asset_path: ./mathfu.tar.gz
+        asset_name: mathfu.tar.gz
+        asset_content_type: application/gzip
